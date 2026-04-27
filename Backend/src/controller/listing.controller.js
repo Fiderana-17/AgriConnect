@@ -1,4 +1,4 @@
-import prisma from "../config/prisma"
+const prisma = required("../config/prisma");
 
 const VALID_CATEGORIES = ["Fruits", "Legumes", "Cereales", "Epices", "Boissons", "Autres"];
 const VALID_UNITS      = ["kg", "g", "L", "piece", "sac"];
