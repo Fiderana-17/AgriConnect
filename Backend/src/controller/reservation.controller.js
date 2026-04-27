@@ -1,63 +1,72 @@
 const prisma = require("../config/prisma");
 
-const getAllUsers = async (req, res) => {
+// post /api/reservations
+const createReservation = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    });
-    return res.json(users);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
+    const { listingId, quantity } = req.body;
 
-const getUserById = async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.params.id },
-      select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true, createdAt: true },
-    });
-    if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
-    return res.json(user);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-};
+    if (!listingId || !quantity) return res.status(400).json({ error: "listingId et quantity sont requis" });
 
-const updateUser = async (req, res) => {
-  try {
-    const { name, email, phone } = req.body;
-
-    if (req.user.id !== req.params.id && req.user.role !== "admin") {
-      return res.status(403).json({ error: "Accès refusé" });
+    const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+    if (!listing)                    return res.status(404).json({ error: "Annonce introuvable" });
+    if (listing.status !== "active") return res.status(400).json({ error: "Cette annonce n'est plus disponible" });
+    if (Number(quantity) <= 0 || Number(quantity) > listing.quantity) {
+      return res.status(400).json({ error: `Quantité invalide. Max disponible : ${listing.quantity} ${listing.unit}` });
     }
 
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: {
-        ...(name  && { name: name.trim() }),
-        ...(email && { email: email.toLowerCase().trim() }),
-        ...(phone && { phone }),
+    const [reservation] = await prisma.$transaction([
+      prisma.reservation.create({
+        data: {
+          listingId,
+          buyerId:    req.user.id,
+          quantity:   Number(quantity),
+          totalPrice: Number(quantity) * listing.pricePerUnit,
+        },
+        include: {
+          listing: { select: { productName: true, unit: true, pricePerUnit: true } },
+          buyer:   { select: { id: true, name: true } },
+        },
+      }),
+      prisma.listing.update({ where: { id: listingId }, data: { status: "reserved" } }),
+    ]);
+
+    return res.status(201).json({ message: "Réservation envoyée au producteur", reservation });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// get /api/reservations
+const getAllReservations = async (req, res) => {
+  try {
+    let where = {};
+
+    if (req.user.role === "acheteur") {
+      where = { buyerId: req.user.id };
+    } else if (req.user.role === "producteur") {
+      where = { listing: { producerId: req.user.id } };
+    }
+    const reservations = await prisma.reservation.findMany({
+      where,
+      include: {
+        listing: { select: { id: true, productName: true, unit: true, region: true, imageUrl: true } },
+        buyer:   { select: { id: true, name: true, phone: true } },
+        delivery: true,
       },
-      select: { id: true, name: true, email: true, role: true, phone: true, avatarUrl: true },
+      orderBy: { createdAt: "desc" },
     });
 
-    return res.json({ message: "Profil mis à jour", user });
+    return res.json(reservations);
   } catch (err) {
-    if (err.code === "P2025") return res.status(404).json({ error: "Utilisateur introuvable" });
     return res.status(500).json({ error: err.message });
   }
 };
 
-const deleteUser = async (req, res) => {
-  try {
-    await prisma.user.delete({ where: { id: req.params.id } });
-    return res.json({ message: "Utilisateur supprimé" });
-  } catch (err) {
-    if (err.code === "P2025") return res.status(404).json({ error: "Utilisateur introuvable" });
-    return res.status(500).json({ error: err.message });
-  }
-};
 
-module.exports = { getAllUsers, getUserById, updateUser, deleteUser };
+// get /api/reservations/{id}
+// const getReservationById = async (req, res) => {
+// }
+
+//patch /api/reservations/{id}/status
+// const updateReservationStatus = async (req, res) => {
+// }
