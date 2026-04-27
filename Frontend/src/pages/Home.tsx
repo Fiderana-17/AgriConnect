@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Sprout, ShoppingBasket, Truck, ShieldCheck, Star, TrendingUp, Leaf, MapPin } from "lucide-react";
-import heroImg from "@/assets/hero-farmer.jpg";
+import heroImg from "../assets/hero-farmer.jpg";
 import { Button } from "@/components/ui/button";
 import ListingCard from "@/components/ListingCard";
 import { useApp } from "@/store/app";
