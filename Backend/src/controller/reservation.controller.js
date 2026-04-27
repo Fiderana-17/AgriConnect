@@ -64,9 +64,25 @@ const getAllReservations = async (req, res) => {
 
 
 // get /api/reservations/{id}
-// const getReservationById = async (req, res) => {
-// }
+const getReservationById = async (req, res) => {
+  try {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: req.params.id },
+      include: {
+        listing:  { include: { producer: { select: { id: true, name: true, phone: true } } } },
+        buyer:    { select: { id: true, name: true, phone: true } },
+        delivery: { include: { transporter: { select: { id: true, name: true, phone: true } } } },
+      },
+    });
+    if (!reservation) return res.status(404).json({ error: "Réservation introuvable" });
+    return res.json(reservation);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
 
 //patch /api/reservations/{id}/status
 // const updateReservationStatus = async (req, res) => {
 // }
+
+module.exports = { createReservation, getAllReservations, getReservationById, updateReservationStatus };
