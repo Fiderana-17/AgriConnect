@@ -37,7 +37,36 @@ const createReservation = async (req, res) => {
 };
 
 // get /api/reservations
+const getAllReservations = async (req, res) => {
+  try {
+    let where = {};
+
+    if (req.user.role === "acheteur") {
+      where = { buyerId: req.user.id };
+    } else if (req.user.role === "producteur") {
+      where = { listing: { producerId: req.user.id } };
+    }
+    const reservations = await prisma.reservation.findMany({
+      where,
+      include: {
+        listing: { select: { id: true, productName: true, unit: true, region: true, imageUrl: true } },
+        buyer:   { select: { id: true, name: true, phone: true } },
+        delivery: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.json(reservations);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 
 // get /api/reservations/{id}
+// const getReservationById = async (req, res) => {
+// }
 
 //patch /api/reservations/{id}/status
+// const updateReservationStatus = async (req, res) => {
+// }
