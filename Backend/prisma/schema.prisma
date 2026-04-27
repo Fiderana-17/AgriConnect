@@ -1,7 +1,186 @@
-const { PrismaClient } = require("@prisma/client");
+// =====================================================
+//  AgriLink Madagascar — Schema Prisma
+//  Base de données : PostgreSQL
+// =====================================================
 
-const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-});
+generator client {
+  provider = "prisma-client-js"
+}
 
-module.exports = prisma;
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────
+//  ENUMS
+// ─────────────────────────────────────────────────────
+
+enum Role {
+  producteur
+  acheteur
+  transporteur
+  admin
+}
+
+enum ListingStatus {
+  active
+  reserved
+  in_transit
+  delivered
+  removed
+}
+
+enum ReservationStatus {
+  pending
+  accepted
+  rejected
+  awaiting_transport
+  in_transit
+  delivered
+}
+
+enum DeliveryStatus {
+  available
+  accepted
+  in_transit
+  delivered
+}
+
+enum Category {
+  Fruits
+  Legumes
+  Cereales
+  Epices
+  Boissons
+  Autres
+}
+
+enum Unit {
+  kg
+  g
+  L
+  piece
+  sac
+}
+
+enum Region {
+  Analamanga
+  Atsinanana
+  Vakinankaratra
+  Boeny
+  Sava
+  Haute_Matsiatra
+  Diana
+}
+
+// ─────────────────────────────────────────────────────
+//  USER
+// ─────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  phone     String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  listings     Listing[]     // Un producteur peut avoir plusieurs annonces
+  reservations Reservation[] // Un acheteur peut avoir plusieurs réservations
+  deliveries   Delivery[]    // Un transporteur peut avoir plusieurs livraisons
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────
+//  LISTING (Annonce de récolte)
+// ─────────────────────────────────────────────────────
+
+model Listing {
+  id           String        @id @default(cuid())
+  productName  String
+  category     Category
+  quantity     Float
+  unit         Unit
+  pricePerUnit Float
+  region       Region
+  availableOn  DateTime
+  description  String?
+  imageUrl     String?
+  status       ListingStatus @default(active)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Clé étrangère vers le producteur
+  producerId String
+  producer   User   @relation(fields: [producerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  reservations Reservation[]
+
+  @@index([producerId])
+  @@index([status])
+  @@index([region])
+  @@index([category])
+  @@map("listings")
+}
+
+// ─────────────────────────────────────────────────────
+//  RESERVATION
+// ─────────────────────────────────────────────────────
+
+model Reservation {
+  id         String            @id @default(cuid())
+  quantity   Float
+  totalPrice Float
+  status     ReservationStatus @default(pending)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  // Clé étrangère vers l'annonce
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  // Clé étrangère vers l'acheteur
+  buyerId String
+  buyer   User   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  delivery Delivery?
+
+  @@index([buyerId])
+  @@index([listingId])
+  @@index([status])
+  @@map("reservations")
+}
+
+// ─────────────────────────────────────────────────────
+//  DELIVERY (Mission de livraison)
+// ─────────────────────────────────────────────────────
+
+model Delivery {
+  id        String         @id @default(cuid())
+  pickup    String         // Lieu de départ (région du producteur)
+  dropoff   String         // Lieu de destination
+  fee       Float?         // Tarif proposé par le transporteur
+  status    DeliveryStatus @default(available)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  // Clé étrangère vers la réservation (1-to-1)
+  reservationId String      @unique
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  // Clé étrangère vers le transporteur (nullable tant que non assigné)
+  transporterId String?
+  transporter   User?   @relation(fields: [transporterId], references: [id], onDelete: SetNull)
+
+  @@index([transporterId])
+  @@index([status])
+  @@map("deliveries")
+}
