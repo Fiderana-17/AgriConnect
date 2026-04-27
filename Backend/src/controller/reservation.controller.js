@@ -49,3 +49,15 @@ const updateUser = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+const deleteUser = async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.params.id } });
+    return res.json({ message: "Utilisateur supprimé" });
+  } catch (err) {
+    if (err.code === "P2025") return res.status(404).json({ error: "Utilisateur introuvable" });
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getAllUsers, getUserById, updateUser, deleteUser };
