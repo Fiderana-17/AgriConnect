@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useApp, REGION_LIST } from "@/store/app";
 import { toast } from "sonner";
 
-const steps = ["Informations", "Détails", "Description"];
+const steps = ["Informations", "Description", "Détails"];
 
 export default function NewListing() {
   const { addListing, role } = useApp();
@@ -40,7 +40,7 @@ export default function NewListing() {
 
   return (
     <div className="min-h-[calc(100vh-68px)] bg-[hsl(148,20%,97%)]">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="bg-white border-b border-border">
         <div className="container-app py-8">
           <button
@@ -83,12 +83,12 @@ export default function NewListing() {
         </div>
       </div>
 
-      {/* ── Form ── */}
+      {/* Form */}
       <div className="container-app py-8 max-w-2xl">
         <form onSubmit={submit}>
           <div className="rounded-3xl border border-border bg-white p-8 shadow-soft-md space-y-6 animate-scale-in">
 
-            {/* Step 0: Base infos */}
+            {/* Step 0: Informations de base */}
             {step === 0 && (
               <>
                 <div className="space-y-2">
@@ -123,8 +123,43 @@ export default function NewListing() {
               </>
             )}
 
-            {/* Step 1: Quantities & price */}
+            {/* Step 1: Description & photo */}
             {step === 1 && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Description</Label>
+                  <Textarea
+                    rows={5} value={form.description}
+                    onChange={e => set("description", e.target.value)}
+                    placeholder="Qualité, conditions de récolte, conditionnement, informations de contact..."
+                    className="rounded-xl border-border bg-surface-alt focus-visible:bg-white focus-visible:border-[hsl(148,60%,32%)] resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Photo (optionnel)</Label>
+                  <label className="block">
+                    <div className="rounded-2xl border-2 border-dashed border-border bg-[hsl(148,20%,97%)] p-10 text-center hover:border-[hsl(148,60%,32%,0.4)] transition-colors cursor-pointer relative">
+                      <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        accept="image/*"
+                        onChange={e => setImage(e.target.files?.[0] || null)}
+                      />
+                      <div className="h-12 w-12 rounded-xl bg-[hsl(148,60%,32%,0.1)] flex items-center justify-center mx-auto mb-3">
+                        <ImagePlus className="h-6 w-6 text-[hsl(148,60%,32%)]" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        {image ? image.name : "Cliquez ou glissez une photo ici"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou WEBP (max 5 Mo)</p>
+                    </div>
+                  </label>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Détails — quantités & prix */}
+            {step === 2 && (
               <>
                 <div className="grid sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
@@ -178,44 +213,9 @@ export default function NewListing() {
                 </div>
               </>
             )}
-
-            {/* Step 2: Description & photo */}
-            {step === 2 && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Description</Label>
-                  <Textarea
-                    rows={5} value={form.description}
-                    onChange={e => set("description", e.target.value)}
-                    placeholder="Qualité, conditions de récolte, conditionnement, informations de contact..."
-                    className="rounded-xl border-border bg-surface-alt focus-visible:bg-white focus-visible:border-[hsl(148,60%,32%)] resize-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Photo (optionnel)</Label>
-                  <label className="block">
-                    <div className="rounded-2xl border-2 border-dashed border-border bg-[hsl(148,20%,97%)] p-10 text-center hover:border-[hsl(148,60%,32%,0.4)] transition-colors cursor-pointer relative">
-                      <input
-                        type="file"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        accept="image/*"
-                        onChange={e => setImage(e.target.files?.[0] || null)}
-                      />
-                      <div className="h-12 w-12 rounded-xl bg-[hsl(148,60%,32%,0.1)] flex items-center justify-center mx-auto mb-3">
-                        <ImagePlus className="h-6 w-6 text-[hsl(148,60%,32%)]" />
-                      </div>
-                      <p className="text-sm font-semibold text-foreground">
-                        {image ? image.name : "Cliquez ou glissez une photo ici"}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">PNG, JPG ou WEBP (max 5 Mo)</p>
-                    </div>
-                  </label>
-                </div>
-              </>
-            )}
           </div>
 
-          {/* ── Navigation ── */}
+          {/* Navigation */}
           <div className="flex gap-3 mt-6">
             {step > 0 ? (
               <Button

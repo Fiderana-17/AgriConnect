@@ -1,4 +1,6 @@
-const prisma = require("../config/prisma");
+const prisma          = require("../config/prisma");
+const { uploadImage } = require("../config/supabase");
+const path            = require("path");
 
 const VALID_CATEGORIES = ["Fruits", "Legumes", "Cereales", "Epices", "Boissons", "Autres"];
 const VALID_UNITS      = ["kg", "g", "L", "piece", "sac"];
@@ -8,7 +10,6 @@ const VALID_REGIONS    = ["Analamanga", "Atsinanana", "Vakinankaratra", "Boeny",
 const getAllListings = async (req, res) => {
   try {
     const { region, category, q, status } = req.query;
-
     const where = {
       NOT: { status: "removed" },
       ...(region   && { region }),
@@ -22,13 +23,11 @@ const getAllListings = async (req, res) => {
         ],
       }),
     };
-
     const listings = await prisma.listing.findMany({
       where,
       include: { producer: { select: { id: true, name: true, phone: true } } },
       orderBy: { createdAt: "desc" },
     });
-
     return res.json(listings);
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -69,18 +68,22 @@ const createListing = async (req, res) => {
     const { productName, category, quantity, unit, pricePerUnit, region, availableOn, description } = req.body;
 
     if (!productName || !category || !quantity || !unit || !pricePerUnit || !region || !availableOn) {
-      return res.status(400).json({ error: "Champs requis : productName, category, quantity, unit, pricePerUnit, region, availableOn" });
+      return res.status(400).json({ error: "Champs requis manquants" });
     }
-    if (!VALID_CATEGORIES.includes(category)) return res.status(400).json({ error: `Catégorie invalide. Options : ${VALID_CATEGORIES.join(", ")}` });
-    if (!VALID_UNITS.includes(unit))           return res.status(400).json({ error: `Unité invalide. Options : ${VALID_UNITS.join(", ")}` });
-    if (!VALID_REGIONS.includes(region))       return res.status(400).json({ error: `Région invalide. Options : ${VALID_REGIONS.join(", ")}` });
+    if (!VALID_CATEGORIES.includes(category)) return res.status(400).json({ error: "Catégorie invalide" });
+if (!VALID_UNITS.includes(unit))           return res.status(400).json({ error: "Unité invalide" });
+if (!VALID_REGIONS.includes(region))       return res.status(400).json({ error: "Région invalide" });
     if (Number(quantity) <= 0 || Number(pricePerUnit) <= 0) {
       return res.status(400).json({ error: "La quantité et le prix doivent être positifs" });
     }
 
-    const imageUrl = req.file
-      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-      : null;
+    // Upload vers Supabase si une image est fournie
+    let imageUrl = null;
+    if (req.file) {
+      const ext      = path.extname(req.file.originalname);
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+      imageUrl = await uploadImage(req.file.buffer, filename, req.file.mimetype);
+    }
 
     const listing = await prisma.listing.create({
       data: {
@@ -109,15 +112,18 @@ const updateListing = async (req, res) => {
   try {
     const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
     if (!listing) return res.status(404).json({ error: "Annonce introuvable" });
-
     if (listing.producerId !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({ error: "Accès refusé" });
     }
 
     const { productName, category, quantity, unit, pricePerUnit, region, availableOn, description } = req.body;
-    const imageUrl = req.file
-      ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
-      : undefined;
+
+    let imageUrl = undefined;
+    if (req.file) {
+      const ext      = path.extname(req.file.originalname);
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+      imageUrl = await uploadImage(req.file.buffer, filename, req.file.mimetype);
+    }
 
     const updated = await prisma.listing.update({
       where: { id: req.params.id },
@@ -145,11 +151,9 @@ const deleteListing = async (req, res) => {
   try {
     const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
     if (!listing) return res.status(404).json({ error: "Annonce introuvable" });
-
     if (listing.producerId !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({ error: "Accès refusé" });
     }
-
     await prisma.listing.update({ where: { id: req.params.id }, data: { status: "removed" } });
     return res.json({ message: "Annonce retirée" });
   } catch (err) {
