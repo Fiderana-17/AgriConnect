@@ -82,7 +82,52 @@ const getReservationById = async (req, res) => {
 };
 
 //patch /api/reservations/{id}/status
-// const updateReservationStatus = async (req, res) => {
-// }
+const updateReservationStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const VALID = ["accepted", "rejected", "awaiting_transport", "in_transit", "delivered"];
+    if (!VALID.includes(status)) return res.status(400).json({ error: `Statut invalide. Options : ${VALID.join(", ")}` });
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: req.params.id },
+      include: { listing: true },
+    });
+    if (!reservation) return res.status(404).json({ error: "Réservation introuvable" });
+
+    if (["accepted", "rejected"].includes(status)) {
+      if (reservation.listing.producerId !== req.user.id && req.user.role !== "admin") {
+        return res.status(403).json({ error: "Seul le producteur peut accepter ou refuser" });
+      }
+    }
+
+    const ops = [
+      prisma.reservation.update({ where: { id: req.params.id }, data: { status } }),
+    ];
+
+    if (status === "accepted") {
+      ops.push(
+        prisma.delivery.create({
+          data: {
+            reservationId: reservation.id,
+            pickup:        reservation.listing.region,
+            dropoff:       "À définir",
+          },
+        })
+      );
+    }
+
+    if (status === "rejected") {
+      ops.push(
+        prisma.listing.update({ where: { id: reservation.listingId }, data: { status: "active" } })
+      );
+    }
+
+    const [updated] = await prisma.$transaction(ops);
+
+    return res.json({ message: `Réservation mise à jour : ${status}`, reservation: updated });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
 
 module.exports = { createReservation, getAllReservations, getReservationById, updateReservationStatus };
