@@ -1,9 +1,10 @@
-const prisma = required("../config/prisma");
+const prisma = require("../config/prisma");
 
 const VALID_CATEGORIES = ["Fruits", "Legumes", "Cereales", "Epices", "Boissons", "Autres"];
 const VALID_UNITS      = ["kg", "g", "L", "piece", "sac"];
 const VALID_REGIONS    = ["Analamanga", "Atsinanana", "Vakinankaratra", "Boeny", "Sava", "Haute_Matsiatra", "Diana"];
 
+// ─── GET /api/listings ──────────────────────────────────────
 const getAllListings = async (req, res) => {
   try {
     const { region, category, q, status } = req.query;
@@ -34,6 +35,7 @@ const getAllListings = async (req, res) => {
   }
 };
 
+// ─── GET /api/listings/my ───────────────────────────────────
 const getMyListings = async (req, res) => {
   try {
     const listings = await prisma.listing.findMany({
@@ -47,6 +49,7 @@ const getMyListings = async (req, res) => {
   }
 };
 
+// ─── GET /api/listings/:id ──────────────────────────────────
 const getListingById = async (req, res) => {
   try {
     const listing = await prisma.listing.findUnique({
@@ -60,6 +63,7 @@ const getListingById = async (req, res) => {
   }
 };
 
+// ─── POST /api/listings ─────────────────────────────────────
 const createListing = async (req, res) => {
   try {
     const { productName, category, quantity, unit, pricePerUnit, region, availableOn, description } = req.body;
@@ -100,6 +104,7 @@ const createListing = async (req, res) => {
   }
 };
 
+// ─── PUT /api/listings/:id ──────────────────────────────────
 const updateListing = async (req, res) => {
   try {
     const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
@@ -135,6 +140,7 @@ const updateListing = async (req, res) => {
   }
 };
 
+// ─── DELETE /api/listings/:id (soft delete) ─────────────────
 const deleteListing = async (req, res) => {
   try {
     const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
