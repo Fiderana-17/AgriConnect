@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Sprout, ShoppingBasket, Truck, ShieldCheck, Star, TrendingUp, Leaf, MapPin } from "lucide-react";
-import heroImg from "@/assets/hero-farmer.jpg";
+import heroImg from "../assets/hero-farmer.jpg";
 import { Button } from "@/components/ui/button";
 import ListingCard from "@/components/ListingCard";
 import { useApp } from "@/store/app";
@@ -53,7 +53,7 @@ const stats = [
 
 const testimonials = [
   {
-    text: "AgriLink Mada m'a permis de vendre mes litchis directement à Antananarivo. Plus d'intermédiaires, plus de revenus.",
+    text: "AgriConnect Mada m'a permis de vendre mes litchis directement à Antananarivo. Plus d'intermédiaires, plus de revenus.",
     author: "Coop. Toamasina",
     role: "Producteur · Atsinanana",
   },
@@ -112,7 +112,7 @@ export default function Home() {
               <span className="relative">
                 au marché
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
-                  <path d="M0 8 Q75 0 150 8 Q225 16 300 8" stroke="hsl(38,85%,48%)" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                  <path d="M0 8 Q75 0 150 8 Q225 16 300 8" stroke="hsl(38,85%,48%)" strokeWidth="3" strokeLinecap="round" fill="none" />
                 </svg>
               </span>
               <br />
@@ -120,7 +120,7 @@ export default function Home() {
             </h1>
 
             <p className="text-lg text-muted-foreground max-w-lg leading-relaxed">
-              AgriLink Mada relie producteurs, acheteurs et transporteurs locaux. Moins d'intermédiaires, des prix justes, une logistique simple.
+              AgriConnect Mada relie producteurs, acheteurs et transporteurs locaux. Moins d'intermédiaires, des prix justes, une logistique simple.
             </p>
 
             <div className="flex flex-wrap gap-4">
@@ -290,7 +290,7 @@ export default function Home() {
         <div className="container-app relative">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl text-white">
-              Ils font confiance à AgriLink
+              Ils font confiance à AgriConnect
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">

@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Sprout className="absolute inset-0 m-auto h-5 w-5 text-white" />
             </div>
             <span className="font-display text-xl tracking-tight text-foreground leading-none">
-              Agri<span className="text-[hsl(148,60%,32%)]">Link</span>
+              Agri<span className="text-[hsl(148,60%,32%)]">Connect</span>
             </span>
           </Link>
 
@@ -149,7 +149,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                   <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-[hsl(148,60%,32%)] to-[hsl(148,55%,22%)]" />
                   <Sprout className="absolute inset-0 m-auto h-4 w-4 text-white" />
                 </div>
-                <span className="font-display text-lg text-foreground">AgriLink Mada</span>
+                <span className="font-display text-lg text-foreground">AgriConnect Mada</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Du champ au marché, directement. La marketplace agricole de Madagascar.
@@ -172,7 +172,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
           <div className="divider-fancy mt-8 mb-5" />
           <p className="text-xs text-muted-foreground text-center">
-            © 2026 AgriLink Mada — Connecter les producteurs malgaches au marché.
+            © 2026 AgriConnect Mada — Connecter les producteurs malgaches au marché.
           </p>
         </div>
       </footer>
