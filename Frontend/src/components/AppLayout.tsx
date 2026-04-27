@@ -3,6 +3,7 @@ import { Home, ShoppingBasket, LayoutDashboard, LogOut, Sprout, Menu, X } from "
 import { useApp } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { type ReactNode, useState, useEffect } from "react";
+import Logo from '../../public/logo.png'
 
 const navItems = [
   { to: "/", label: "Accueil", icon: Home },
@@ -47,7 +48,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Link to="/" className="flex items-center gap-3 group shrink-0">
             <div className="relative h-9 w-9">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[hsl(148,60%,32%)] to-[hsl(148,55%,22%)] shadow-soft-sm group-hover:shadow-soft-md transition-shadow" />
-              <Sprout className="absolute inset-0 m-auto h-5 w-5 text-white" />
+              <img className="absolute inset-0 m-auto  rounded-2xl p-0.5" src={Logo} alt="logo agri connect" />
             </div>
             <span className="font-display text-xl tracking-tight text-foreground leading-none">
               Agri<span className="text-[hsl(148,60%,32%)]">Connect</span>
