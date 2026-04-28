@@ -35,7 +35,17 @@ const getAllListings = async (req, res) => {
       include: { producer: { select: { id: true, name: true, phone: true } } },
       orderBy: { createdAt: "desc" },
     });
-    return res.json(listings);
+
+    const listingsWithRemaining = await Promise.all(listings.map(async (l) => {
+      const agg = await prisma.reservation.aggregate({
+        where: { listingId: l.id, status: { notIn: ["rejected"] } },
+        _sum: { quantity: true },
+      });
+      const reserved = agg._sum.quantity || 0;
+      return { ...l, remainingQuantity: l.quantity - reserved };
+    }));
+
+    return res.json(listingsWithRemaining);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -63,12 +73,23 @@ const getListingById = async (req, res) => {
       include: { producer: { select: { id: true, name: true, phone: true } } },
     });
     if (!listing) return res.status(404).json({ error: "Annonce introuvable" });
-    return res.json(listing);
+
+    // Calcul quantité restante
+    const agg = await prisma.reservation.aggregate({
+      where: {
+        listingId: listing.id,
+        status: { notIn: ["rejected"] },
+      },
+      _sum: { quantity: true },
+    });
+    const reserved = agg._sum.quantity || 0;
+    const remainingQuantity = listing.quantity - reserved;
+
+    return res.json({ ...listing, remainingQuantity });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
 };
-
 // ─── POST /api/listings ─────────────────────────────────────
 const createListing = async (req, res) => {
   try {
