@@ -1,20 +1,21 @@
 const prisma = require("../config/prisma");
 
-// ─── POST /api/reservations ─────────────────────────────────
+// ─── POST /api/reservations ─────────────────────────────────────────────────
 const createReservation = async (req, res) => {
   try {
     const { listingId, quantity } = req.body;
 
-    if (!listingId || !quantity) return res.status(400).json({ error: "listingId et quantity sont requis" });
+    if (!listingId || !quantity)
+      return res.status(400).json({ error: "listingId et quantity sont requis" });
 
     const listing = await prisma.listing.findUnique({ where: { id: listingId } });
     if (!listing)                    return res.status(404).json({ error: "Annonce introuvable" });
     if (listing.status !== "active") return res.status(400).json({ error: "Cette annonce n'est plus disponible" });
-    if (Number(quantity) <= 0 || Number(quantity) > listing.quantity) {
-      return res.status(400).json({ error: `Quantité invalide. Max disponible : ${listing.quantity} ${listing.unit}` });
-    }
+    if (Number(quantity) <= 0 || Number(quantity) > listing.quantity)
+      return res.status(400).json({ error: `Quantité invalide. Max : ${listing.quantity} ${listing.unit}` });
 
-    const [reservation] = await prisma.$transaction([
+    // Transaction : créer réservation + passer listing en reserved
+    await prisma.$transaction([
       prisma.reservation.create({
         data: {
           listingId,
@@ -22,13 +23,20 @@ const createReservation = async (req, res) => {
           quantity:   Number(quantity),
           totalPrice: Number(quantity) * listing.pricePerUnit,
         },
-        include: {
-          listing: { select: { productName: true, unit: true, pricePerUnit: true } },
-          buyer:   { select: { id: true, name: true } },
-        },
       }),
       prisma.listing.update({ where: { id: listingId }, data: { status: "reserved" } }),
     ]);
+
+    // Recharger avec toutes les relations pour le frontend
+    const reservation = await prisma.reservation.findFirst({
+      where: { listingId, buyerId: req.user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        listing: { select: { id: true, productName: true, unit: true, region: true, imageUrl: true, pricePerUnit: true } },
+        buyer:   { select: { id: true, name: true, phone: true } },
+        delivery: true,
+      },
+    });
 
     return res.status(201).json({ message: "Réservation envoyée au producteur", reservation });
   } catch (err) {
@@ -36,7 +44,7 @@ const createReservation = async (req, res) => {
   }
 };
 
-// ─── GET /api/reservations ──────────────────────────────────
+// ─── GET /api/reservations ──────────────────────────────────────────────────
 const getAllReservations = async (req, res) => {
   try {
     let where = {};
@@ -50,7 +58,9 @@ const getAllReservations = async (req, res) => {
     const reservations = await prisma.reservation.findMany({
       where,
       include: {
-        listing: { select: { id: true, productName: true, unit: true, region: true, imageUrl: true } },
+        listing: {
+          select: { id: true, productName: true, unit: true, region: true, imageUrl: true, pricePerUnit: true, producerId: true },
+        },
         buyer:   { select: { id: true, name: true, phone: true } },
         delivery: true,
       },
@@ -63,7 +73,7 @@ const getAllReservations = async (req, res) => {
   }
 };
 
-// ─── GET /api/reservations/:id ──────────────────────────────
+// ─── GET /api/reservations/:id ─────────────────────────────────────────────
 const getReservationById = async (req, res) => {
   try {
     const reservation = await prisma.reservation.findUnique({
@@ -81,12 +91,13 @@ const getReservationById = async (req, res) => {
   }
 };
 
-// ─── PATCH /api/reservations/:id/status ─────────────────────
+// ─── PATCH /api/reservations/:id/status ────────────────────────────────────
 const updateReservationStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const VALID = ["accepted", "rejected", "awaiting_transport", "in_transit", "delivered"];
-    if (!VALID.includes(status)) return res.status(400).json({ error: `Statut invalide. Options : ${VALID.join(", ")}` });
+    if (!VALID.includes(status))
+      return res.status(400).json({ error: `Statut invalide. Options : ${VALID.join(", ")}` });
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: req.params.id },
@@ -95,15 +106,15 @@ const updateReservationStatus = async (req, res) => {
     if (!reservation) return res.status(404).json({ error: "Réservation introuvable" });
 
     if (["accepted", "rejected"].includes(status)) {
-      if (reservation.listing.producerId !== req.user.id && req.user.role !== "admin") {
+      if (reservation.listing.producerId !== req.user.id && req.user.role !== "admin")
         return res.status(403).json({ error: "Seul le producteur peut accepter ou refuser" });
-      }
     }
 
     const ops = [
       prisma.reservation.update({ where: { id: req.params.id }, data: { status } }),
     ];
 
+    // Acceptée → créer une livraison disponible
     if (status === "accepted") {
       ops.push(
         prisma.delivery.create({
@@ -116,13 +127,23 @@ const updateReservationStatus = async (req, res) => {
       );
     }
 
+    // Refusée → remettre le listing en active (visible et réservable à nouveau)
     if (status === "rejected") {
       ops.push(
         prisma.listing.update({ where: { id: reservation.listingId }, data: { status: "active" } })
       );
     }
 
-    const [updated] = await prisma.$transaction(ops);
+    await prisma.$transaction(ops);
+
+    const updated = await prisma.reservation.findUnique({
+      where: { id: req.params.id },
+      include: {
+        listing:  { select: { id: true, productName: true, unit: true, region: true, imageUrl: true, pricePerUnit: true, producerId: true } },
+        buyer:    { select: { id: true, name: true, phone: true } },
+        delivery: true,
+      },
+    });
 
     return res.json({ message: `Réservation mise à jour : ${status}`, reservation: updated });
   } catch (err) {
