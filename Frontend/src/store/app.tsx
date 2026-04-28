@@ -34,6 +34,7 @@ export interface Listing {
   description: string | null;
   status: ListingStatus;
   createdAt: string;
+  remainingQuantity?: number;
 }
 
 export interface Reservation {
@@ -81,6 +82,7 @@ interface AppState {
   fetchMyReservations: () => Promise<void>;
   fetchAvailableDeliveries: () => Promise<void>;
   updateReservationStatus: (id: string, status: ReservationStatus) => Promise<void>;
+  cancelReservation: (id: string) => Promise<void>;
 }
 
 const AppCtx = createContext<AppState | null>(null);
@@ -281,6 +283,17 @@ useEffect(() => {
     }
   }, [fetchAvailableDeliveries]);
 
+  const cancelReservation = useCallback(async (id: string) => {
+  try {
+    await api.delete(`/reservations/${id}`);
+    toast.success("Réservation annulée");
+    await fetchMyReservations();
+    await fetchListings();
+  } catch (error: any) {
+    toast.error(error.response?.data?.error || "Erreur d'annulation");
+  }
+}, [fetchMyReservations, fetchListings]);
+
   // ── Context value ─────────────────────────────────────────────────────────────
   const value = useMemo<AppState>(() => ({
     role, user, listings, reservations, deliveries, loading,
@@ -288,17 +301,17 @@ useEffect(() => {
     fetchListings, addListing, removeListing,
     reserve, acceptDelivery, advanceDelivery,
     fetchMyReservations, fetchAvailableDeliveries,
-    updateReservationStatus,
+    updateReservationStatus,cancelReservation
   }), [
     role, user, listings, reservations, deliveries, loading,
     login, register, logout,
     fetchListings, addListing, removeListing,
     reserve, acceptDelivery, advanceDelivery,
     fetchMyReservations, fetchAvailableDeliveries,
-    updateReservationStatus,
+    updateReservationStatus, cancelReservation
   ]);
 
-  return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
+  return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>; 
 }
 
 export function useApp() {
