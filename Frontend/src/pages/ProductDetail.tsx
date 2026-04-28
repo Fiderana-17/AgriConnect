@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Package, User, ShieldCheck, Star, Leaf, Share2, Heart } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Package, User, ShieldCheck, Star, Leaf, Share2, Heart, Lock } from "lucide-react";
 import { useApp, formatAr } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,10 @@ export default function ProductDetail() {
   const listing = listings.find(l => l.id === id);
   const [qty, setQty] = useState(10);
   const [liked, setLiked] = useState(false);
+
   const catLabels: Record<string, string> = {
-    Fruits: "Fruits", Legumes: "Légumes", Cereales: "Céréales", Epices: "Épices", Boissons: "Boissons", Autres: "Autres"
+    Fruits: "Fruits", Legumes: "Légumes", Cereales: "Céréales",
+    Epices: "Épices", Boissons: "Boissons", Autres: "Autres"
   };
   const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?q=80&w=800&auto=format&fit=crop";
 
@@ -31,12 +33,17 @@ export default function ProductDetail() {
     );
   }
 
+  const isReserved = listing.status === "reserved";
   const total = qty * listing.pricePerUnit;
 
   const onReserve = () => {
     if (!user) {
       toast.info("Connectez-vous pour réserver");
       navigate("/connexion", { state: { role: "acheteur" } });
+      return;
+    }
+    if (isReserved) {
+      toast.error("Ce produit est déjà réservé");
       return;
     }
     if (qty < 1 || qty > listing.quantity) {
@@ -70,9 +77,19 @@ export default function ProductDetail() {
               <img
                 src={listing.imageUrl || PLACEHOLDER_IMG}
                 alt={listing.productName}
-                className="w-full aspect-[4/3] object-cover transition-transform duration-700 group-hover:scale-105"
+                className={`w-full aspect-[4/3] object-cover transition-transform duration-700 group-hover:scale-105 ${isReserved ? "opacity-80" : ""}`}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+
+              {/* Badge "Déjà réservé" */}
+              {isReserved && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/50 backdrop-blur-sm rounded-2xl px-6 py-3 flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-white" />
+                    <span className="text-white font-semibold text-lg">Déjà réservé</span>
+                  </div>
+                </div>
+              )}
 
               {/* Actions overlay */}
               <div className="absolute top-4 right-4 flex gap-2">
@@ -88,10 +105,15 @@ export default function ProductDetail() {
               </div>
 
               {/* Category badge */}
-              <div className="absolute bottom-4 left-4">
+              <div className="absolute bottom-4 left-4 flex items-center gap-2">
                 <span className="glass-panel rounded-pill px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground">
                   {catLabels[listing.category] || listing.category}
                 </span>
+                {isReserved && (
+                  <span className="rounded-pill px-3 py-1.5 text-xs font-semibold uppercase tracking-wide bg-amber-500 text-white">
+                    Réservé
+                  </span>
+                )}
               </div>
             </div>
 
@@ -124,7 +146,14 @@ export default function ProductDetail() {
             <div className="rounded-3xl border border-border bg-white p-7 shadow-soft-lg space-y-6">
               {/* Header */}
               <div>
-                <span className="badge-green">{catLabels[listing.category] || listing.category}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="badge-green">{catLabels[listing.category] || listing.category}</span>
+                  {isReserved && (
+                    <span className="inline-flex items-center gap-1 rounded-pill px-3 py-1 text-xs font-semibold bg-amber-100 text-amber-700">
+                      <Lock className="h-3 w-3" /> Déjà réservé
+                    </span>
+                  )}
+                </div>
                 <h1 className="font-display text-3xl md:text-4xl mt-3 leading-tight text-foreground">
                   {listing.productName}
                 </h1>
@@ -138,66 +167,82 @@ export default function ProductDetail() {
 
               {/* Details */}
               <dl className="space-y-3 rounded-xl bg-[hsl(148,20%,97%)] p-4">
-                <Row icon={MapPin}  label="Région"       value={listing.region} />
-                <Row icon={Package} label="Disponible"   value={`${listing.quantity} ${listing.unit === "piece" ? "pièce" : listing.unit}`} />
-                <Row icon={Calendar} label="À partir du" value={new Date(listing.availableOn).toLocaleDateString()} />
-                <Row icon={User}    label="Producteur"   value={listing.producer.name} />
+                <Row icon={MapPin}   label="Région"       value={listing.region} />
+                <Row icon={Package}  label="Disponible"   value={`${listing.quantity} ${listing.unit === "piece" ? "pièce" : listing.unit}`} />
+                <Row icon={Calendar} label="À partir du"  value={new Date(listing.availableOn).toLocaleDateString()} />
+                <Row icon={User}     label="Producteur"   value={listing.producer.name} />
               </dl>
 
-              {/* Reservation */}
+              {/* Zone réservation — acheteur seulement */}
               {role !== "producteur" && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="qty" className="text-sm font-semibold">
-                      Quantité à réserver ({listing.unit === "piece" ? "pièce" : listing.unit})
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setQty(q => Math.max(1, q - 10))}
-                        className="h-12 w-12 rounded-xl border-2 border-border text-xl font-bold text-muted-foreground hover:border-[hsl(148,60%,32%)] hover:text-[hsl(148,60%,32%)] transition-colors flex items-center justify-center"
-                      >
-                        −
-                      </button>
-                      <Input
-                        id="qty"
-                        type="number"
-                        min={1}
-                        max={listing.quantity}
-                        value={qty}
-                        onChange={e => setQty(Number(e.target.value))}
-                        className="h-12 rounded-xl text-center font-display text-lg border-2 border-border focus-visible:border-[hsl(148,60%,32%)]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setQty(q => Math.min(listing.quantity, q + 10))}
-                        className="h-12 w-12 rounded-xl border-2 border-border text-xl font-bold text-muted-foreground hover:border-[hsl(148,60%,32%)] hover:text-[hsl(148,60%,32%)] transition-colors flex items-center justify-center"
-                      >
-                        +
-                      </button>
+                  {isReserved ? (
+                    /* ── Produit déjà réservé ── */
+                    <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5 text-center space-y-2">
+                      <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+                        <Lock className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <p className="font-semibold text-amber-800">Ce produit est déjà réservé</p>
+                      <p className="text-sm text-amber-600 leading-relaxed">
+                        Un acheteur a déjà réservé cette récolte. Elle sera à nouveau disponible si le producteur refuse la réservation.
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    /* ── Formulaire de réservation ── */
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="qty" className="text-sm font-semibold">
+                          Quantité à réserver ({listing.unit === "piece" ? "pièce" : listing.unit})
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setQty(q => Math.max(1, q - 10))}
+                            className="h-12 w-12 rounded-xl border-2 border-border text-xl font-bold text-muted-foreground hover:border-[hsl(148,60%,32%)] hover:text-[hsl(148,60%,32%)] transition-colors flex items-center justify-center"
+                          >
+                            −
+                          </button>
+                          <Input
+                            id="qty"
+                            type="number"
+                            min={1}
+                            max={listing.quantity}
+                            value={qty}
+                            onChange={e => setQty(Number(e.target.value))}
+                            className="h-12 rounded-xl text-center font-display text-lg border-2 border-border focus-visible:border-[hsl(148,60%,32%)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setQty(q => Math.min(listing.quantity, q + 10))}
+                            className="h-12 w-12 rounded-xl border-2 border-border text-xl font-bold text-muted-foreground hover:border-[hsl(148,60%,32%)] hover:text-[hsl(148,60%,32%)] transition-colors flex items-center justify-center"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Total */}
-                  <div className="rounded-xl bg-gradient-to-br from-[hsl(148,60%,32%,0.08)] to-[hsl(148,60%,32%,0.04)] border border-[hsl(148,60%,32%,0.15)] px-5 py-4 flex justify-between items-center">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total estimé</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{qty} {listing.unit === "piece" ? "pièce" : listing.unit} × {formatAr(listing.pricePerUnit)}</p>
-                    </div>
-                    <p className="font-display text-3xl text-[hsl(148,60%,32%)] tabular-nums">{formatAr(total)}</p>
-                  </div>
+                      {/* Total */}
+                      <div className="rounded-xl bg-gradient-to-br from-[hsl(148,60%,32%,0.08)] to-[hsl(148,60%,32%,0.04)] border border-[hsl(148,60%,32%,0.15)] px-5 py-4 flex justify-between items-center">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total estimé</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{qty} {listing.unit === "piece" ? "pièce" : listing.unit} × {formatAr(listing.pricePerUnit)}</p>
+                        </div>
+                        <p className="font-display text-3xl text-[hsl(148,60%,32%)] tabular-nums">{formatAr(total)}</p>
+                      </div>
 
-                  <Button
-                    size="lg"
-                    className="w-full h-14 rounded-xl bg-[hsl(148,60%,32%)] hover:bg-[hsl(148,60%,26%)] text-white shadow-soft-md font-semibold text-base"
-                    onClick={onReserve}
-                  >
-                    Réserver maintenant
-                  </Button>
+                      <Button
+                        size="lg"
+                        className="w-full h-14 rounded-xl bg-[hsl(148,60%,32%)] hover:bg-[hsl(148,60%,26%)] text-white shadow-soft-md font-semibold text-base"
+                        onClick={onReserve}
+                      >
+                        Réserver maintenant
+                      </Button>
 
-                  <p className="text-xs text-center text-muted-foreground">
-                    Le transporteur est notifié dès l'acceptation du producteur.
-                  </p>
+                      <p className="text-xs text-center text-muted-foreground">
+                        Le transporteur est notifié dès l'acceptation du producteur.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
