@@ -11,10 +11,17 @@ const getAllListings = async (req, res) => {
   try {
     const { region, category, q, status } = req.query;
     const where = {
+      // On exclut uniquement les annonces "removed"
+      // Les annonces "active" ET "reserved" sont visibles par tous
       NOT: { status: "removed" },
       ...(region   && { region }),
       ...(category && { category }),
-      ...(status   && { status }),
+      // Si un filtre status est explicitement passé en query, on l'applique
+      // Sinon on affiche active + reserved
+      ...(status
+        ? { status }
+        : { status: { in: ["active", "reserved"] } }
+      ),
       ...(q && {
         OR: [
           { productName: { contains: q, mode: "insensitive" } },
@@ -71,17 +78,16 @@ const createListing = async (req, res) => {
       return res.status(400).json({ error: "Champs requis manquants" });
     }
     if (!VALID_CATEGORIES.includes(category)) return res.status(400).json({ error: "Catégorie invalide" });
-if (!VALID_UNITS.includes(unit))           return res.status(400).json({ error: "Unité invalide" });
-if (!VALID_REGIONS.includes(region))       return res.status(400).json({ error: "Région invalide" });
+    if (!VALID_UNITS.includes(unit))           return res.status(400).json({ error: "Unité invalide" });
+    if (!VALID_REGIONS.includes(region))       return res.status(400).json({ error: "Région invalide" });
     if (Number(quantity) <= 0 || Number(pricePerUnit) <= 0) {
       return res.status(400).json({ error: "La quantité et le prix doivent être positifs" });
     }
 
-    // Upload vers Supabase si une image est fournie
     let imageUrl = null;
     if (req.file) {
       const ext      = path.extname(req.file.originalname);
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
       imageUrl = await uploadImage(req.file.buffer, filename, req.file.mimetype);
     }
 
