@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useApp, type Role } from "@/store/app";
 
 const roles: { id: Role; label: string; icon: typeof Sprout; desc: string; color: string }[] = [
-  { id: "producteur",  label: "Producteur",  icon: Sprout,        desc: "Publiez vos récoltes",    color: "hsl(148,60%,32%)" },
-  { id: "acheteur",    label: "Acheteur",    icon: ShoppingBasket, desc: "Achetez frais",           color: "hsl(38,85%,40%)"  },
-  { id: "transporteur",label: "Transporteur",icon: Truck,          desc: "Livrez les commandes",    color: "hsl(15,65%,42%)"  },
+  { id: "producteur",   label: "Producteur",   icon: Sprout,        desc: "Publiez vos récoltes",   color: "hsl(148,60%,32%)" },
+  { id: "acheteur",     label: "Acheteur",     icon: ShoppingBasket, desc: "Achetez frais",          color: "hsl(38,85%,40%)"  },
+  { id: "transporteur", label: "Transporteur", icon: Truck,          desc: "Livrez les commandes",   color: "hsl(15,65%,42%)"  }
 ];
 
 const perks = [
@@ -21,11 +21,12 @@ const perks = [
 
 export default function Login() {
   const location = useLocation() as { state?: { role?: Role } };
-  const [mode, setMode] = useState<"login" | "signup">("signup");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<Role>(location.state?.role ?? "producteur");
+  const [mode, setMode]       = useState<"login" | "signup">("signup");
+  const [name, setName]       = useState("");
+  const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole]       = useState<Role>(location.state?.role ?? "producteur");
+
   const { login, register, loading } = useApp();
   const navigate = useNavigate();
 
@@ -38,12 +39,13 @@ export default function Login() {
         await login(email, password);
       }
       navigate("/dashboard");
-    } catch (err) {
-      // toast is already handled in store
+    } catch {
+      // toast déjà géré dans le store
     }
   };
 
-  const selectedRole = roles.find(r => r.id === role)!;
+  // Fallback sécurisé si role ne correspond à aucune entrée
+  const selectedRole = roles.find(r => r.id === role) ?? roles[0];
 
   return (
     <div className="min-h-[calc(100vh-68px)] flex items-center py-12">
@@ -115,6 +117,7 @@ export default function Login() {
           {/* ── Right: form ── */}
           <div className="animate-settle-up" style={{ animationDelay: "150ms" }}>
             <div className="rounded-3xl border border-border bg-white p-8 shadow-soft-lg space-y-6">
+
               {/* Mode toggle */}
               <div className="flex gap-1 p-1.5 bg-surface-alt rounded-xl">
                 {(["signup", "login"] as const).map(m => (
@@ -166,10 +169,10 @@ export default function Login() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-semibold">Email ou téléphone</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold">Email</Label>
                   <Input
                     id="email"
-                    type="text"
+                    type="email"
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
