@@ -243,7 +243,7 @@ function ListingRow({ listing }: { listing: Listing }) {
 
 /* ── Buyer ── */
 function BuyerDash() {
-  const { reservations } = useApp();
+  const { reservations, cancelReservation } = useApp();
   return (
     <div className="space-y-8">
       <div className="grid sm:grid-cols-3 gap-5">
@@ -260,17 +260,27 @@ function BuyerDash() {
         />
       }>
         {reservations.map(r => (
-          <div key={r.id} className="flex items-center gap-4 p-4 hover:bg-[hsl(148,20%,97%)] transition-colors">
-            <img src={r.listing?.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{r.listing?.productName}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit} · {formatAr(r.totalPrice)}
-              </p>
-            </div>
-            <StatusPill status={r.status} />
-          </div>
-        ))}
+      <div key={r.id} className="flex items-center gap-4 p-4 hover:bg-[hsl(148,20%,97%)] transition-colors">
+        <img src={r.listing?.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-foreground truncate">{r.listing?.productName}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit} · {formatAr(r.totalPrice)}
+          </p>
+        </div>
+        <StatusPill status={r.status} />
+        {/* Bouton annuler — seulement si pas encore en transit */}
+        {!["in_transit", "delivered"].includes(r.status) && (
+          <button
+            onClick={() => cancelReservation(r.id)}
+            className="text-muted-foreground hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors"
+            aria-label="Annuler"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    ))}
       </Section>
     </div>
   );
