@@ -32,16 +32,7 @@ const roleCards = [
     badge: "badge-clay",
     color: "hsl(15,65%,42%)",
     bg: "hsl(15,65%,52%,0.08)",
-  },
-  {
-    role: "admin",
-    title: "Admin",
-    desc: "Modérez les annonces et suivez l'activité de la plateforme.",
-    icon: ShieldCheck,
-    badge: "badge-green",
-    color: "hsl(148,60%,32%)",
-    bg: "hsl(148,60%,32%,0.06)",
-  },
+  }
 ] as const;
 
 const stats = [

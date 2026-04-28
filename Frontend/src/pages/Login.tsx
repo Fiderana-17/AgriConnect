@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApp, type Role } from "@/store/app";
-import { toast } from "sonner";
 
 const roles: { id: Role; label: string; icon: typeof Sprout; desc: string; color: string }[] = [
   { id: "producteur",  label: "Producteur",  icon: Sprout,        desc: "Publiez vos récoltes",    color: "hsl(148,60%,32%)" },
   { id: "acheteur",    label: "Acheteur",    icon: ShoppingBasket, desc: "Achetez frais",           color: "hsl(38,85%,40%)"  },
   { id: "transporteur",label: "Transporteur",icon: Truck,          desc: "Livrez les commandes",    color: "hsl(15,65%,42%)"  },
-  { id: "admin",       label: "Admin",       icon: ShieldCheck,    desc: "Gérez la plateforme",     color: "hsl(148,60%,32%)" },
 ];
 
 const perks = [

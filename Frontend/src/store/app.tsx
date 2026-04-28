@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import api from "@/lib/api";
 import { toast } from "sonner";
 
-export type Role = "producteur" | "acheteur" | "transporteur" | "admin";
+export type Role = "producteur" | "acheteur" | "transporteur";
 
 export type ListingStatus = "active" | "reserved" | "in_transit" | "delivered" | "removed";
 export type ReservationStatus = "pending" | "accepted" | "awaiting_transport" | "in_transit" | "delivered";
