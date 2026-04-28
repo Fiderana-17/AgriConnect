@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Sprout, ShoppingBasket, Truck, ShieldCheck, TrendingUp, Trash2, CheckCircle2, Clock, Activity } from "lucide-react";
+import { Plus, Sprout, ShoppingBasket, Truck, ShieldCheck, TrendingUp, Trash2, CheckCircle2, Clock, Activity, Lock } from "lucide-react";
 import { useApp, formatAr, type Listing, type ReservationStatus, type User } from "@/store/app";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
@@ -89,9 +89,9 @@ export default function Dashboard() {
       </div>
 
       <div className="container-app py-8 md:py-10 space-y-8">
-        {role === "producteur"  && <ProducerDash user={user} />}
-        {role === "acheteur"    && <BuyerDash />}
-        {role === "transporteur"&& <TransporterDash />}
+        {role === "producteur"   && <ProducerDash user={user} />}
+        {role === "acheteur"     && <BuyerDash />}
+        {role === "transporteur" && <TransporterDash />}
       </div>
     </div>
   );
@@ -121,15 +121,16 @@ function Stat({ icon: Icon, label, value, color = "hsl(148,60%,32%)" }: {
 /* ── Status pill ── */
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
-    active:           { label: "Active",           bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)" },
-    reserved:         { label: "Réservée",         bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)"  },
-    pending:          { label: "En attente",       bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)"  },
-    accepted:         { label: "Acceptée",         bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)" },
-    awaiting_transport:{ label: "Attente transport",bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)" },
-    in_transit:       { label: "En transit",       bg: "hsl(200,70%,48%,0.12)", color: "hsl(200,70%,32%)" },
-    delivered:        { label: "Livrée",           bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)" },
-    available:        { label: "Disponible",       bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)" },
-    removed:          { label: "Retirée",          bg: "hsl(0,72%,55%,0.1)",    color: "hsl(0,72%,45%)"   },
+    active:            { label: "Active",            bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)"  },
+    reserved:          { label: "Réservée",          bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)"   },
+    pending:           { label: "En attente",        bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)"   },
+    accepted:          { label: "Acceptée",          bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)"  },
+    awaiting_transport:{ label: "Attente transport", bg: "hsl(38,85%,48%,0.12)", color: "hsl(38,80%,33%)"   },
+    in_transit:        { label: "En transit",        bg: "hsl(200,70%,48%,0.12)", color: "hsl(200,70%,32%)"  },
+    delivered:         { label: "Livrée",            bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)"  },
+    available:         { label: "Disponible",        bg: "hsl(148,60%,32%,0.1)",  color: "hsl(148,60%,26%)"  },
+    removed:           { label: "Retirée",           bg: "hsl(0,72%,55%,0.1)",    color: "hsl(0,72%,45%)"    },
+    rejected:          { label: "Refusée",           bg: "hsl(0,72%,55%,0.1)",    color: "hsl(0,72%,45%)"    },
   };
   const m = map[status] ?? { label: status, bg: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" };
   return (
@@ -146,12 +147,53 @@ function StatusPill({ status }: { status: string }) {
 function ProducerDash({ user }: { user: User }) {
   const { listings, reservations, updateReservationStatus } = useApp();
   const mine = listings.filter(l => l.producerId === user.id && l.status !== "removed");
+
   return (
     <div className="space-y-8">
       <div className="grid sm:grid-cols-3 gap-5">
         <Stat icon={Sprout} label="Annonces actives" value={mine.filter(l => l.status === "active").length} />
-        <Stat icon={ShoppingBasket} label="Réservations reçues" value={reservations.length} color="hsl(38,85%,40%)" />
-        </div>
+        <Stat icon={Lock} label="Annonces réservées" value={mine.filter(l => l.status === "reserved").length} color="hsl(38,85%,40%)" />
+        <Stat icon={ShoppingBasket} label="Réservations reçues" value={reservations.length} color="hsl(15,65%,42%)" />
+      </div>
+
+      {/* ── Réservations reçues EN PREMIER ── */}
+      <Section title="Réservations reçues" items={reservations.filter(r => r.status === "pending")} empty={
+        <EmptyState emoji="📦" title="Aucune nouvelle réservation" desc="Les commandes apparaîtront ici dès qu'un acheteur sera intéressé." />
+      }>
+        {reservations.filter(r => r.status === "pending").map(r => (
+          <div key={r.id} className="p-4 hover:bg-[hsl(148,20%,97%)] transition-colors space-y-3">
+            <div className="flex items-center gap-4">
+              <img src={r.listing?.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">
+                  {r.listing?.productName} · {r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Par {r.buyer?.name} · {formatAr(r.totalPrice)}</p>
+              </div>
+              <StatusPill status={r.status} />
+            </div>
+            <div className="flex justify-end gap-2 pl-[4.5rem]">
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl border-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                onClick={() => updateReservationStatus(r.id, "rejected") as any}
+              >
+                Refuser
+              </Button>
+              <Button
+                size="sm"
+                className="bg-[hsl(148,60%,32%)] text-white rounded-xl hover:bg-[hsl(148,60%,26%)]"
+                onClick={() => updateReservationStatus(r.id, "accepted") as any}
+              >
+                Accepter
+              </Button>
+            </div>
+          </div>
+        ))}
+      </Section>
+
+      {/* ── Mes annonces EN SECOND ── */}
       <Section title="Mes annonces" items={mine} empty={
         <EmptyState
           emoji="🌱"
@@ -163,37 +205,23 @@ function ProducerDash({ user }: { user: User }) {
         {mine.map(l => <ListingRow key={l.id} listing={l} />)}
       </Section>
 
-      <Section title="Réservations reçues" items={reservations.filter(r => r.status === "pending")} empty={
-        <EmptyState emoji="📦" title="Aucune nouvelle réservation" desc="Les commandes apparaîtront ici dès qu'un acheteur sera intéressé." />
-      }>
-        {reservations.filter(r => r.status === "pending").map(r => (
-          <div key={r.id} className="p-4 hover:bg-[hsl(148,20%,97%)] transition-colors space-y-3">
-            <div className="flex items-center gap-4">
-              <img src={r.listing?.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground truncate">{r.listing?.productName} · {r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Par {r.buyer?.name} · {formatAr(r.totalPrice)}</p>
-              </div>
-              <StatusPill status={r.status} />
-            </div>
-            <div className="flex justify-end gap-2 pl-[4.5rem]">
-              <Button size="sm" variant="outline" className="rounded-xl border-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                onClick={() => updateReservationStatus(r.id, "rejected") as any}>Refuser</Button>
-              <Button size="sm" className="bg-[hsl(148,60%,32%)] text-white rounded-xl hover:bg-[hsl(148,60%,26%)]"
-                onClick={() => updateReservationStatus(r.id, "accepted") as any}>Accepter</Button>
-            </div>
-          </div>
-        ))}
-      </Section>
     </div>
   );
 }
 
 function ListingRow({ listing }: { listing: Listing }) {
   const { removeListing } = useApp();
+  const isReserved = listing.status === "reserved";
   return (
     <Link to={`/produits/${listing.id}`} className="flex items-center gap-4 p-4 hover:bg-[hsl(148,20%,97%)] transition-colors group">
-      <img src={listing.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
+      <div className="relative shrink-0">
+        <img src={listing.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border" />
+        {isReserved && (
+          <div className="absolute inset-0 rounded-xl bg-black/30 flex items-center justify-center">
+            <Lock className="h-4 w-4 text-white" />
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-foreground truncate">{listing.productName}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{listing.quantity} {listing.unit === "piece" ? "pièce" : listing.unit} · {listing.region}</p>
@@ -224,15 +252,21 @@ function BuyerDash() {
         <Stat icon={CheckCircle2} label="Livrées" value={reservations.filter(r => r.status === "delivered").length} color="hsl(15,65%,42%)" />
       </div>
       <Section title="Mes réservations" items={reservations} empty={
-        <EmptyState emoji="🛒" title="Aucune réservation" desc="Parcourez les produits pour réserver votre première récolte."
-          cta={<Link to="/produits"><Button className="bg-[hsl(148,60%,32%)] text-white rounded-xl">Voir les produits</Button></Link>} />
+        <EmptyState
+          emoji="🛒"
+          title="Aucune réservation"
+          desc="Parcourez les produits pour réserver votre première récolte."
+          cta={<Link to="/produits"><Button className="bg-[hsl(148,60%,32%)] text-white rounded-xl">Voir les produits</Button></Link>}
+        />
       }>
         {reservations.map(r => (
           <div key={r.id} className="flex items-center gap-4 p-4 hover:bg-[hsl(148,20%,97%)] transition-colors">
             <img src={r.listing?.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{r.listing?.productName}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit} · {formatAr(r.totalPrice)}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {r.quantity} {r.listing?.unit === "piece" ? "pièce" : r.listing?.unit} · {formatAr(r.totalPrice)}
+              </p>
             </div>
             <StatusPill status={r.status} />
           </div>
@@ -244,8 +278,19 @@ function BuyerDash() {
 
 /* ── Transporter ── */
 function TransporterDash() {
-  const { deliveries, acceptDelivery, advanceDelivery } = useApp();
+  const { deliveries, acceptDelivery, advanceDelivery, fetchAvailableDeliveries } = useApp();
   const [fees, setFees] = useState<Record<string, number>>({});
+
+  // ── Polling toutes les 10 secondes ──
+  useEffect(() => {
+    fetchAvailableDeliveries(); // fetch immédiat au montage
+
+    const interval = setInterval(() => {
+      fetchAvailableDeliveries();
+    }, 10_000); // 10 secondes
+
+    return () => clearInterval(interval); // cleanup au démontage
+  }, [fetchAvailableDeliveries]);
   return (
     <div className="space-y-8">
       <div className="grid sm:grid-cols-3 gap-5">
@@ -265,7 +310,9 @@ function TransporterDash() {
               <div className="flex items-center gap-4">
                 <img src={l.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{l.productName} · {r.quantity} {l.unit === "piece" ? "pièce" : l.unit}</p>
+                  <p className="font-semibold text-foreground truncate">
+                    {l.productName} · {r.quantity} {l.unit === "piece" ? "pièce" : l.unit}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">Départ: {d.pickup} → Arrivée: {d.dropoff}</p>
                 </div>
                 <StatusPill status={d.status} />
@@ -274,16 +321,25 @@ function TransporterDash() {
                 <div className="flex gap-2 items-end pl-[4.5rem]">
                   <div className="flex-1 max-w-xs">
                     <label className="text-xs text-muted-foreground font-medium">Tarif proposé (Ar)</label>
-                    <Input type="number" min={1000} placeholder="50 000" className="h-10 mt-1 rounded-xl"
-                      value={fees[d.id] || ""} onChange={e => setFees({ ...fees, [d.id]: Number(e.target.value) })} />
+                    <Input
+                      type="number"
+                      min={1000}
+                      placeholder="50 000"
+                      className="h-10 mt-1 rounded-xl"
+                      value={fees[d.id] || ""}
+                      onChange={e => setFees({ ...fees, [d.id]: Number(e.target.value) })}
+                    />
                   </div>
                   <Button
                     className="bg-[hsl(148,60%,32%)] text-white rounded-xl hover:bg-[hsl(148,60%,26%)]"
                     onClick={() => {
-                      const f = fees[d.id]; if (!f) { toast.error("Indiquez un tarif"); return; }
+                      const f = fees[d.id];
+                      if (!f) { toast.error("Indiquez un tarif"); return; }
                       acceptDelivery(d.id, f);
                     }}
-                  >Accepter</Button>
+                  >
+                    Accepter
+                  </Button>
                 </div>
               )}
               {(d.status === "accepted" || d.status === "in_transit") && (
@@ -302,7 +358,9 @@ function TransporterDash() {
 }
 
 /* ── Helpers ── */
-function Section({ title, children, items, empty }: { title: string; children: React.ReactNode; items: unknown[]; empty?: React.ReactNode }) {
+function Section({ title, children, items, empty }: {
+  title: string; children: React.ReactNode; items: unknown[]; empty?: React.ReactNode;
+}) {
   return (
     <section>
       <h2 className="font-display text-2xl text-foreground mb-4">{title}</h2>
@@ -313,7 +371,9 @@ function Section({ title, children, items, empty }: { title: string; children: R
   );
 }
 
-function EmptyState({ emoji, title, desc, cta }: { emoji: string; title: string; desc: string; cta?: React.ReactNode }) {
+function EmptyState({ emoji, title, desc, cta }: {
+  emoji: string; title: string; desc: string; cta?: React.ReactNode;
+}) {
   return (
     <div className="py-16 text-center">
       <div className="text-5xl mb-4">{emoji}</div>
