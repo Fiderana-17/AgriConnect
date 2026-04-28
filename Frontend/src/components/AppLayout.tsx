@@ -3,7 +3,7 @@ import { Home, ShoppingBasket, LayoutDashboard, LogOut, Sprout, Menu, X } from "
 import { useApp } from "@/store/app";
 import { Button } from "@/components/ui/button";
 import { type ReactNode, useState, useEffect } from "react";
-import Logo from '../../public/logo.png'
+import Logo from '/public/logo.png'
 
 const navItems = [
   { to: "/", label: "Accueil", icon: Home },
@@ -155,20 +155,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Du champ au marché, directement. La marketplace agricole de Madagascar.
               </p>
-            </div>
-            <div className="flex gap-12 text-sm">
-              <div className="space-y-2">
-                <p className="font-semibold text-foreground uppercase tracking-wider text-xs">Plateforme</p>
-                {["Accueil", "Produits", "Tableau de bord"].map(l => (
-                  <p key={l}><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{l}</a></p>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <p className="font-semibold text-foreground uppercase tracking-wider text-xs">Entreprise</p>
-                {["À propos", "Aide", "CGU", "Confidentialité"].map(l => (
-                  <p key={l}><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">{l}</a></p>
-                ))}
-              </div>
             </div>
           </div>
           <div className="divider-fancy mt-8 mb-5" />

@@ -145,7 +145,7 @@ export default function ProductDetail() {
               </dl>
 
               {/* Reservation */}
-              {role !== "producteur" && role !== "admin" && (
+              {role !== "producteur" && (
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="qty" className="text-sm font-semibold">

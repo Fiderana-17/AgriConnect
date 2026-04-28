@@ -10,14 +10,12 @@ const roleIcon: Record<string, typeof Sprout> = {
   producteur: Sprout,
   acheteur: ShoppingBasket,
   transporteur: Truck,
-  admin: ShieldCheck,
 };
 
 const roleBg: Record<string, string> = {
   producteur: "hsl(148,60%,32%)",
   acheteur: "hsl(38,85%,40%)",
   transporteur: "hsl(15,65%,42%)",
-  admin: "hsl(148,60%,32%)",
 };
 
 const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?q=80&w=800&auto=format&fit=crop";
@@ -94,7 +92,6 @@ export default function Dashboard() {
         {role === "producteur"  && <ProducerDash user={user} />}
         {role === "acheteur"    && <BuyerDash />}
         {role === "transporteur"&& <TransporterDash />}
-        {role === "admin"       && <AdminDash />}
       </div>
     </div>
   );
@@ -154,8 +151,7 @@ function ProducerDash({ user }: { user: User }) {
       <div className="grid sm:grid-cols-3 gap-5">
         <Stat icon={Sprout} label="Annonces actives" value={mine.filter(l => l.status === "active").length} />
         <Stat icon={ShoppingBasket} label="Réservations reçues" value={reservations.length} color="hsl(38,85%,40%)" />
-        <Stat icon={TrendingUp} label="Vues totales" value="1.2k" color="hsl(15,65%,42%)" />
-      </div>
+        </div>
       <Section title="Mes annonces" items={mine} empty={
         <EmptyState
           emoji="🌱"
@@ -300,39 +296,6 @@ function TransporterDash() {
             </div>
           );
         })}
-      </Section>
-    </div>
-  );
-}
-
-/* ── Admin ── */
-function AdminDash() {
-  const { listings, reservations, deliveries, removeListing } = useApp();
-  return (
-    <div className="space-y-8">
-      <div className="grid sm:grid-cols-4 gap-5">
-        <Stat icon={Sprout} label="Annonces" value={listings.filter(l => l.status !== "removed").length} />
-        <Stat icon={ShoppingBasket} label="Réservations" value={reservations.length} color="hsl(38,85%,40%)" />
-        <Stat icon={Truck} label="Livraisons" value={deliveries.length} color="hsl(15,65%,42%)" />
-        <Stat icon={ShieldCheck} label="Retirées" value={listings.filter(l => l.status === "removed").length} color="hsl(0,72%,55%)" />
-      </div>
-      <Section title="Toutes les annonces" items={listings}>
-        {listings.map(l => (
-          <div key={l.id} className="flex items-center gap-4 p-4 hover:bg-[hsl(148,20%,97%)] transition-colors">
-            <img src={l.imageUrl || PLACEHOLDER_IMG} alt="" className="h-14 w-14 rounded-xl object-cover border border-border shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">{l.productName}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{l.producer.name} · {l.region}</p>
-            </div>
-            <StatusPill status={l.status} />
-            {l.status !== "removed" && (
-              <Button size="sm" variant="outline" className="rounded-xl border-2 hover:border-red-300 hover:text-red-500 hover:bg-red-50"
-                onClick={() => removeListing(l.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ))}
       </Section>
     </div>
   );

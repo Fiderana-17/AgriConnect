@@ -32,24 +32,8 @@ const roleCards = [
     badge: "badge-clay",
     color: "hsl(15,65%,42%)",
     bg: "hsl(15,65%,52%,0.08)",
-  },
-  {
-    role: "admin",
-    title: "Admin",
-    desc: "Modérez les annonces et suivez l'activité de la plateforme.",
-    icon: ShieldCheck,
-    badge: "badge-green",
-    color: "hsl(148,60%,32%)",
-    bg: "hsl(148,60%,32%,0.06)",
-  },
+  }
 ] as const;
-
-const stats = [
-  { n: "120+", l: "Producteurs actifs", icon: Sprout },
-  { n: "7", l: "Régions couvertes", icon: MapPin },
-  { n: "48h", l: "Livraison max", icon: Truck },
-  { n: "98%", l: "Satisfaction", icon: Star },
-];
 
 const testimonials = [
   {
@@ -140,20 +124,6 @@ export default function Home() {
                 Vendre ma récolte
               </Button>
             </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-4 gap-4 pt-6">
-              {stats.map(({ n, l, icon: Icon }, i) => (
-                <div
-                  key={l}
-                  className="animate-settle-up"
-                  style={{ animationDelay: `${200 + i * 80}ms` }}
-                >
-                  <div className="text-2xl font-display font-semibold text-foreground tabular-nums">{n}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{l}</div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Right — Hero image */}
@@ -185,22 +155,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
-            {/* Floating badge — top right */}
-            <div
-              className="absolute -top-4 -right-4 glass-panel rounded-2xl p-3 shadow-soft-md animate-settle-up"
-              style={{ animationDelay: "650ms" }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-[hsl(148,60%,32%)] flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-foreground">+34%</p>
-                  <p className="text-[10px] text-muted-foreground">ce mois</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -211,7 +165,7 @@ export default function Home() {
           <div className="text-center max-w-2xl mx-auto mb-14 animate-settle-up">
             <span className="badge-green mb-4">La plateforme</span>
             <h2 className="font-display text-4xl md:text-5xl mt-3">
-              Une plateforme, <em className="text-[hsl(148,60%,32%)] not-italic">quatre rôles</em>
+              Une plateforme, <em className="text-[hsl(148,60%,32%)] not-italic">trois rôles</em>
             </h2>
             <p className="text-muted-foreground mt-4 text-lg">
               Choisissez votre rôle pour commencer en quelques secondes.
@@ -345,7 +299,7 @@ export default function Home() {
               size="lg"
               variant="outline"
               onClick={() => navigate("/produits")}
-              className="border-2 border-white/40 text-white hover:bg-white/10 rounded-xl font-semibold h-13"
+              className="border-2 border-white/40 text-green-400 hover:bg-white/10 hover:text-white rounded-xl font-semibold h-13"
             >
               Voir les produits
             </Button>
