@@ -21,7 +21,7 @@ export default function Products() {
   };
 
   const filtered = listings.filter(l =>
-    l.status === "active" &&
+  (l.status === "active" || l.status === "reserved") &&
     (region === "all" || l.region === region) &&
     (category === "all" || l.category === category) &&
     (!q || l.productName.toLowerCase().includes(q.toLowerCase()) || l.producer.name.toLowerCase().includes(q.toLowerCase()))
