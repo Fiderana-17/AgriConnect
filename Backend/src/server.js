@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors    = require("cors");
+const path    = require("path");
 const prisma  = require("./config/prisma");
 
 // ── Routes ────────────────────────────────────────────────
@@ -15,7 +16,9 @@ const PORT = process.env.PORT || 5000;
 
 // ── Middlewares globaux ────────────────────────────────────
 app.use(cors({
-  origin: "http://localhost:5173", // URL du frontend Vite
+  origin: process.env.NODE_ENV === "production"
+    ? process.env.FRONTEND_URL || "*"
+    : "http://localhost:5173",
   credentials: true,
 }));
 app.use(express.json());
@@ -41,10 +44,20 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// ── Gestion des routes inconnues ───────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ error: "Route introuvable" });
-});
+// ── Servir le frontend React (production) ─────────────────
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.join(__dirname, "../../Frontend/dist");
+  app.use(express.static(distPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  // ── Gestion des routes inconnues (dev uniquement) ────────
+  app.use((req, res) => {
+    res.status(404).json({ error: "Route introuvable" });
+  });
+}
 
 // ── Gestion globale des erreurs ────────────────────────────
 app.use((err, req, res, next) => {
