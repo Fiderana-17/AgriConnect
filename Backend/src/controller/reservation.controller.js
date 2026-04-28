@@ -9,12 +9,30 @@ const createReservation = async (req, res) => {
       return res.status(400).json({ error: "listingId et quantity sont requis" });
 
     const listing = await prisma.listing.findUnique({ where: { id: listingId } });
-    if (!listing)                    return res.status(404).json({ error: "Annonce introuvable" });
-    if (listing.status !== "active") return res.status(400).json({ error: "Cette annonce n'est plus disponible" });
-    if (Number(quantity) <= 0 || Number(quantity) > listing.quantity)
-      return res.status(400).json({ error: `Quantité invalide. Max : ${listing.quantity} ${listing.unit}` });
+    if (!listing)
+      return res.status(404).json({ error: "Annonce introuvable" });
+    if (listing.status === "removed")
+      return res.status(400).json({ error: "Cette annonce n'est plus disponible" });
 
-    // Transaction : créer réservation + passer listing en reserved
+    // ── Calcul de la quantité déjà réservée ──
+    const existingReservations = await prisma.reservation.aggregate({
+      where: {
+        listingId,
+        status: { notIn: ["rejected"] }, // on exclut les refusées
+      },
+      _sum: { quantity: true },
+    });
+
+    const alreadyReserved = existingReservations._sum.quantity || 0;
+    const remaining = listing.quantity - alreadyReserved;
+
+    if (Number(quantity) <= 0 || Number(quantity) > remaining)
+      return res.status(400).json({ error: `Quantité invalide. Disponible : ${remaining} ${listing.unit}` });
+
+    const newAlreadyReserved = alreadyReserved + Number(quantity);
+    const isFull = newAlreadyReserved >= listing.quantity;
+
+    // Transaction : créer réservation + passer listing en "reserved" seulement si stock épuisé
     await prisma.$transaction([
       prisma.reservation.create({
         data: {
@@ -24,10 +42,13 @@ const createReservation = async (req, res) => {
           totalPrice: Number(quantity) * listing.pricePerUnit,
         },
       }),
-      prisma.listing.update({ where: { id: listingId }, data: { status: "reserved" } }),
+      // Passer en "reserved" uniquement si le stock est épuisé
+      ...(isFull ? [prisma.listing.update({
+        where: { id: listingId },
+        data: { status: "reserved" },
+      })] : []),
     ]);
 
-    // Recharger avec toutes les relations pour le frontend
     const reservation = await prisma.reservation.findFirst({
       where: { listingId, buyerId: req.user.id },
       orderBy: { createdAt: "desc" },
@@ -151,4 +172,58 @@ const updateReservationStatus = async (req, res) => {
   }
 };
 
-module.exports = { createReservation, getAllReservations, getReservationById, updateReservationStatus };
+// ─── DELETE /api/reservations/:id ──────────────────────────
+const deleteReservation = async (req, res) => {
+  try {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: req.params.id },
+      include: { listing: true },
+    });
+
+    if (!reservation)
+      return res.status(404).json({ error: "Réservation introuvable" });
+
+    // Seul l'acheteur concerné ou un admin peut annuler
+    if (reservation.buyerId !== req.user.id && req.user.role !== "admin")
+      return res.status(403).json({ error: "Accès refusé" });
+
+    // On ne peut annuler que si pas encore en transit ou livré
+    if (["in_transit", "delivered"].includes(reservation.status))
+      return res.status(400).json({ error: "Impossible d'annuler une réservation en cours de livraison" });
+
+    // Recalcul de la quantité restante après annulation
+    const agg = await prisma.reservation.aggregate({
+      where: {
+        listingId: reservation.listingId,
+        status: { notIn: ["rejected"] },
+        id: { not: reservation.id }, // exclure celle qu'on supprime
+      },
+      _sum: { quantity: true },
+    });
+    const stillReserved = agg._sum.quantity || 0;
+    const isFull = stillReserved >= reservation.listing.quantity;
+
+    await prisma.$transaction([
+      prisma.reservation.delete({ where: { id: req.params.id } }),
+      // Remettre le listing en "active" si le stock n'est plus épuisé
+      prisma.listing.update({
+        where: { id: reservation.listingId },
+        data: { status: isFull ? "reserved" : "active" },
+      }),
+    ]);
+
+    return res.json({ message: "Réservation annulée" });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = {
+  createReservation,
+  getAllReservations,
+  getReservationById,
+  updateReservationStatus,
+  deleteReservation, // ← AJOUTER
+};
+
+module.exports = { createReservation, getAllReservations, getReservationById, updateReservationStatus, deleteReservation};
