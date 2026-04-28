@@ -6,6 +6,7 @@ const {
   getAllReservations,
   getReservationById,
   updateReservationStatus,
+  deleteReservation
 } = require("../controller/reservation.controller");
 
 const { authenticate, authorize } = require("../middlewares/auth.middleware");
@@ -23,5 +24,7 @@ router.patch(
   authorize("producteur", "admin", "transporteur"),
   updateReservationStatus
 );
+
+router.delete("/:id", authorize("acheteur", "admin"), deleteReservation); 
 
 module.exports = router;
