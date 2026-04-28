@@ -151,8 +151,7 @@ function ProducerDash({ user }: { user: User }) {
       <div className="grid sm:grid-cols-3 gap-5">
         <Stat icon={Sprout} label="Annonces actives" value={mine.filter(l => l.status === "active").length} />
         <Stat icon={ShoppingBasket} label="Réservations reçues" value={reservations.length} color="hsl(38,85%,40%)" />
-        <Stat icon={TrendingUp} label="Vues totales" value="1.2k" color="hsl(15,65%,42%)" />
-      </div>
+        </div>
       <Section title="Mes annonces" items={mine} empty={
         <EmptyState
           emoji="🌱"
