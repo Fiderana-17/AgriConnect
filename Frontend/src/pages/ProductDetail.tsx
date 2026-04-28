@@ -33,7 +33,8 @@ export default function ProductDetail() {
     );
   }
 
-  const isReserved = listing.status === "reserved";
+const remaining = listing.remainingQuantity ?? listing.quantity;
+const isReserved = remaining <= 0 || listing.status === "reserved"; 
   const total = qty * listing.pricePerUnit;
 
   const onReserve = () => {
@@ -168,7 +169,7 @@ export default function ProductDetail() {
               {/* Details */}
               <dl className="space-y-3 rounded-xl bg-[hsl(148,20%,97%)] p-4">
                 <Row icon={MapPin}   label="Région"       value={listing.region} />
-                <Row icon={Package}  label="Disponible"   value={`${listing.quantity} ${listing.unit === "piece" ? "pièce" : listing.unit}`} />
+                <Row icon={Package}  label="Disponible"   value={`${remaining} ${listing.unit === "piece" ? "pièce" : listing.unit} restants`} />
                 <Row icon={Calendar} label="À partir du"  value={new Date(listing.availableOn).toLocaleDateString()} />
                 <Row icon={User}     label="Producteur"   value={listing.producer.name} />
               </dl>
@@ -206,7 +207,7 @@ export default function ProductDetail() {
                             id="qty"
                             type="number"
                             min={1}
-                            max={listing.quantity}
+                            max={remaining}
                             value={qty}
                             onChange={e => setQty(Number(e.target.value))}
                             className="h-12 rounded-xl text-center font-display text-lg border-2 border-border focus-visible:border-[hsl(148,60%,32%)]"
