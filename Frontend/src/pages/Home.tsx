@@ -172,7 +172,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {roleCards.map(({ role, title, desc, icon: Icon, color }, i) => (
               <Link
                 key={role}
