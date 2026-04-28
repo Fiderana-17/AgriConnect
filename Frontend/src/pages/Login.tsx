@@ -99,19 +99,6 @@ export default function Login() {
                 );
               })}
             </div>
-
-            {/* Perks */}
-            <div className="rounded-2xl bg-[hsl(148,20%,97%)] border border-border p-6 space-y-3">
-              <p className="text-sm font-semibold text-foreground uppercase tracking-wider">Pourquoi AgriConnect ?</p>
-              {perks.map(p => (
-                <div key={p} className="flex items-center gap-3">
-                  <div className="h-5 w-5 rounded-full bg-[hsl(148,60%,32%)] flex items-center justify-center shrink-0">
-                    <Leaf className="h-3 w-3 text-white" />
-                  </div>
-                  <p className="text-sm text-foreground">{p}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* ── Right: form ── */}
