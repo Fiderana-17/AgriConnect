@@ -44,20 +44,10 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// ── Servir le frontend React (production) ─────────────────
-if (process.env.NODE_ENV === "production") {
-  const distPath = path.join(__dirname, "../../Frontend/dist");
-  app.use(express.static(distPath));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-} else {
-  // ── Gestion des routes inconnues (dev uniquement) ────────
-  app.use((req, res) => {
-    res.status(404).json({ error: "Route introuvable" });
-  });
-}
+app.use((req, res) => {
+  res.status(404).json({ error: "Route introuvable" });
+});
 
 // ── Gestion globale des erreurs ────────────────────────────
 app.use((err, req, res, next) => {
